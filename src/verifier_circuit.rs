@@ -36,7 +36,7 @@ where
 {
     assert!(A_t.len() == B_t.len());
     let l = A_t.len();
-    assert!(l.is_power_of_two() && l >= 128);
+    assert!(l.is_power_of_two() && l >= 2);
 
     let mut g1exp_inputs_t: Vec<G1ExpInputTarget<F, D>> = vec![];
     let mut g1exp_output_t: Vec<G1Target<F, D>> = vec![];
@@ -129,8 +129,9 @@ where
         Z_t = new_Z_t;
         n = n / 2;
     }
-
+    println!("inputs to g1exp: {:?}", g1exp_inputs_t);
     let contr_g1exp_outputs_t = g1_exp_circuit::<F, C, D>(builder, &g1exp_inputs_t);
+    println!("past g1");
     let contr_g2exp_outputs_t = g2_exp_circuit::<F, C, D>(builder, &g2exp_inputs_t);
     let contr_fq12exp_outputs_t = fq12_exp_circuit::<F, C, D>(builder, &fq12exp_inputs_t);
     g1exp_output_t
