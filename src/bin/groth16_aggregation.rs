@@ -236,11 +236,11 @@ fn main() {
         end_native_aggregation_time.duration_since(start_native_aggregation_time)
     );
 
-    println!("SIPP proof native {:?} ", sipp_proof_native);
+    println!("SIPP proof native");
 
     let sipp_statement_native = sipp_verify_native(&a, &b, &sipp_proof_native).unwrap();
 
-    println!("SIPP statement native {:?}", sipp_statement_native);
+    println!("SIPP statement native");
     // assert!(pairing(sipp_statement.final_A, sipp_statement.final_B) == sipp_statement.final_Z);
 
     type F = GoldilocksField;

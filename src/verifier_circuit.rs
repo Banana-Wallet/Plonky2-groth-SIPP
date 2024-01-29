@@ -129,9 +129,9 @@ where
         Z_t = new_Z_t;
         n = n / 2;
     }
-    println!("inputs to g1exp: {:?}", g1exp_inputs_t);
+    // println!("inputs to g1exp: {:?}", g1exp_inputs_t);
     let contr_g1exp_outputs_t = g1_exp_circuit::<F, C, D>(builder, &g1exp_inputs_t);
-    println!("past g1");
+    // println!("past g1");
     let contr_g2exp_outputs_t = g2_exp_circuit::<F, C, D>(builder, &g2exp_inputs_t);
     let contr_fq12exp_outputs_t = fq12_exp_circuit::<F, C, D>(builder, &fq12exp_inputs_t);
     g1exp_output_t
