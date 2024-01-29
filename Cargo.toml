@@ -29,3 +29,6 @@ rayon = "1.7.0"
 
 [[bin]]
 name = "bls_aggregation"
+
+[[bin]]
+name = "groth16_aggregation"
