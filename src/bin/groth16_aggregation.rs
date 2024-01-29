@@ -13,6 +13,7 @@ use plonky2::{
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
     },
 };
+use plonky2_bn254::fields::debug_tools::print_ark_fq;
 use plonky2_bn254::{
     curves::{
         g1curve_target::G1Target, g2curve_target::G2Target,
@@ -251,40 +252,52 @@ fn main() {
     let mut builder = CircuitBuilder::<F, D>::new(config);
 
     // ! start circuit building
-
+    let testing_value = Fq::from(1u64);
+    print_ark_fq(testing_value, "reached line 256".to_string());
     let num_inputs = 1;
     let vk_alpha1 = G1Target::empty(&mut builder);
+    print_ark_fq(testing_value, "reached line 259".to_string());
     let vk_beta2 = G2Target::empty(&mut builder);
+    print_ark_fq(testing_value, "reached line 261".to_string());
     let vk_gamma2 = G2Target::empty(&mut builder);
+    print_ark_fq(testing_value, "reached line 263".to_string());
     let vk_delta2 = G2Target::empty(&mut builder);
+    print_ark_fq(testing_value, "reached line 265".to_string());
     let vk_ic = (0..num_inputs + 1)
         .map(|_| G1Target::empty(&mut builder))
         .collect_vec();
+    print_ark_fq(testing_value, "reached line 269".to_string());
 
     let input_target = (0..num_inputs)
         .map(|_| FqTarget::empty(&mut builder))
         .collect_vec();
-
+    print_ark_fq(testing_value, "reached line 274".to_string());
     let proof_a = G1Target::empty(&mut builder);
     let proof_b = G2Target::empty(&mut builder);
     let proof_c = G1Target::empty(&mut builder);
+    print_ark_fq(testing_value, "reached line 278".to_string());
 
     let vk_x = vk_ic[0].clone();
-    // vk.ic.length would be 2
+    print_ark_fq(testing_value, "reached line 281".to_string());
 
     for i in 0..num_inputs {
         // vk_x = vk_x.add(vk_ic[i+1].mul_bigint(&[input[i];1])).into_affine();
         let (x, y) = (vk_ic[i + 1].x.clone(), vk_ic[i + 1].y.clone());
+    print_ark_fq(testing_value, "reached line 286".to_string());
         let (x_ic_mul_input) = x.mul(&mut builder, &input_target[i]);
+    print_ark_fq(testing_value, "reached line 288".to_string());
         let (y_ic_mul_input) = y.mul(&mut builder, &input_target[i]);
+    print_ark_fq(testing_value, "reached line 290".to_string());
         // let (x_ic_mul_input_plus_x) = x_ic_mul_input.add(&mut builder, &vk_ic[i].x);
         // let (y_ic_mul_input_plus_y) = y_ic_mul_input.add(&mut builder, &vk_ic[i].y);
         let temp_affine = G1Target::new(x_ic_mul_input, y_ic_mul_input);
+    print_ark_fq(testing_value, "reached line 294".to_string());
         vk_x.add(&mut builder, &temp_affine);
     }
 
     let neg_a = proof_a.neg(&mut builder);
     // print_fq_target(&mut builder, &proof_b.x, "Pairing check #1".to_string());
+    print_ark_fq(testing_value, "reached line 300".to_string());
 
     let mut a:  Vec<G1Target<F, D>> = vec![neg_a.clone(), vk_alpha1.clone(), vk_x.clone(), proof_c.clone()];
     for _ in 0..31 {
@@ -293,6 +306,7 @@ fn main() {
         a.push(vk_x.clone());
         a.push(proof_c.clone());
     }
+    print_ark_fq(testing_value, "reached line 309".to_string());
 
     let mut b: Vec<G2Target<F, D>> = vec![
         proof_b.clone(),
@@ -308,17 +322,21 @@ fn main() {
         b.push(vk_gamma2.clone());
         b.push(vk_delta2.clone());
     };
+    print_ark_fq(testing_value, "reached line 325".to_string());
 
     let n: usize = 128;
     let log_n = n.trailing_zeros();
     let sipp_proof_circuit = (0..2 * log_n + 1)
     .map(|_| Fq12Target::empty(&mut builder))
     .collect_vec();
+print_ark_fq(testing_value, "reached line 332".to_string());
     let sipp_statement = sipp_verifier_circuit::<F, C, D>(&mut builder, &a, &b, &sipp_proof_circuit);
-    
+    print_ark_fq(testing_value, "reached line 334".to_string());
     // final pairing. This also takes much time!
     let z = pairing_circuit::<F, C, D>(&mut builder, sipp_statement.final_A, sipp_statement.final_B);
+    print_ark_fq(testing_value, "reached line 337".to_string());
     Fq12Target::connect(&mut builder, &z, &sipp_statement.final_Z);
+    print_ark_fq(testing_value, "reached line 339".to_string());
 
     println!("Start building circuit");
     let start_building_circuit = Instant::now();
