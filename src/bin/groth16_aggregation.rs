@@ -186,44 +186,33 @@ fn main() {
     let vk = get_verification_key();
     println!("end vk building");
 
-  
     let (vk_ic_1_x, vk_ic_1_y) = vk.ic[1].xy().unwrap();
     let vk_ic_affine = G1Affine::new(*vk_ic_1_x, *vk_ic_1_y);
 
     let vk_x_val = vk.ic[0];
-    let vk_ic_mul = vk_ic_affine.mul_bigint(&[20u64;1]).into_affine();
+    let vk_ic_mul = vk_ic_affine.mul_bigint(&[20u64; 1]).into_affine();
 
     // println!(" temp_affine {:?}", temp_affine);
-    let vk_x_final = (vk_x_val + vk_ic_mul).into_affine();
+    let vk_x_final = vk_x_val.add(vk_ic_mul).into_affine();
     // println!(" vk_x_final {:?}", vk_x_val);
 
-    let mut a = vec![
-        proof.a,
-        vk.alpha1,
-        vk_x_final,
-        proof.c,
-    ];
+    let mut a = vec![proof.a, vk.alpha1, vk_x_final, proof.c];
 
     for _ in 0..31 {
         a.push(proof.a);
         a.push(vk.alpha1);
         a.push(vk_x_final);
         a.push(proof.c);
-    };
+    }
 
-    let mut b = vec![
-        proof.b,
-        vk.beta2,
-        vk.gamma2,
-        vk.delta2,
-    ];
+    let mut b = vec![proof.b, vk.beta2, vk.gamma2, vk.delta2];
 
     for _ in 0..31 {
         b.push(proof.b);
         b.push(vk.beta2);
         b.push(vk.gamma2);
         b.push(vk.delta2);
-    };
+    }
 
     println!("start native aggregation");
     let start_native_aggregation_time = Instant::now();
@@ -283,15 +272,15 @@ fn main() {
     for i in 0..num_inputs {
         // vk_x = vk_x.add(vk_ic[i+1].mul_bigint(&[input[i];1])).into_affine();
         let (x, y) = (vk_ic[i + 1].x.clone(), vk_ic[i + 1].y.clone());
-    print_ark_fq(testing_value, "reached line 286".to_string());
+        print_ark_fq(testing_value, "reached line 286".to_string());
         let (x_ic_mul_input) = x.mul(&mut builder, &input_target[i]);
-    print_ark_fq(testing_value, "reached line 288".to_string());
+        print_ark_fq(testing_value, "reached line 288".to_string());
         let (y_ic_mul_input) = y.mul(&mut builder, &input_target[i]);
-    print_ark_fq(testing_value, "reached line 290".to_string());
+        print_ark_fq(testing_value, "reached line 290".to_string());
         // let (x_ic_mul_input_plus_x) = x_ic_mul_input.add(&mut builder, &vk_ic[i].x);
         // let (y_ic_mul_input_plus_y) = y_ic_mul_input.add(&mut builder, &vk_ic[i].y);
         let temp_affine = G1Target::new(x_ic_mul_input, y_ic_mul_input);
-    print_ark_fq(testing_value, "reached line 294".to_string());
+        print_ark_fq(testing_value, "reached line 294".to_string());
         vk_x.add(&mut builder, &temp_affine);
     }
 
@@ -299,7 +288,12 @@ fn main() {
     // print_fq_target(&mut builder, &proof_b.x, "Pairing check #1".to_string());
     print_ark_fq(testing_value, "reached line 300".to_string());
 
-    let mut a:  Vec<G1Target<F, D>> = vec![neg_a.clone(), vk_alpha1.clone(), vk_x.clone(), proof_c.clone()];
+    let mut a: Vec<G1Target<F, D>> = vec![
+        neg_a.clone(),
+        vk_alpha1.clone(),
+        vk_x.clone(),
+        proof_c.clone(),
+    ];
     for _ in 0..31 {
         a.push(neg_a.clone());
         a.push(vk_alpha1.clone());
@@ -315,25 +309,26 @@ fn main() {
         vk_delta2.clone(),
     ];
 
-
     for _ in 0..31 {
         b.push(proof_b.clone());
         b.push(vk_beta2.clone());
         b.push(vk_gamma2.clone());
         b.push(vk_delta2.clone());
-    };
+    }
     print_ark_fq(testing_value, "reached line 325".to_string());
 
     let n: usize = 128;
     let log_n = n.trailing_zeros();
     let sipp_proof_circuit = (0..2 * log_n + 1)
-    .map(|_| Fq12Target::empty(&mut builder))
-    .collect_vec();
-print_ark_fq(testing_value, "reached line 332".to_string());
-    let sipp_statement = sipp_verifier_circuit::<F, C, D>(&mut builder, &a, &b, &sipp_proof_circuit);
+        .map(|_| Fq12Target::empty(&mut builder))
+        .collect_vec();
+    print_ark_fq(testing_value, "reached line 332".to_string());
+    let sipp_statement =
+        sipp_verifier_circuit::<F, C, D>(&mut builder, &a, &b, &sipp_proof_circuit);
     print_ark_fq(testing_value, "reached line 334".to_string());
     // final pairing. This also takes much time!
-    let z = pairing_circuit::<F, C, D>(&mut builder, sipp_statement.final_A, sipp_statement.final_B);
+    let z =
+        pairing_circuit::<F, C, D>(&mut builder, sipp_statement.final_A, sipp_statement.final_B);
     print_ark_fq(testing_value, "reached line 337".to_string());
     Fq12Target::connect(&mut builder, &z, &sipp_statement.final_Z);
     print_ark_fq(testing_value, "reached line 339".to_string());
@@ -348,7 +343,7 @@ print_ark_fq(testing_value, "reached line 332".to_string());
     );
 
     // ! aggregate using SIPP instead of making pairing checks
-   
+
     let (vk_alpha_x, vk_alpha_y) = vk.alpha1.xy().unwrap();
     let (vk_beta2_x, vk_beta2_y) = vk.beta2.xy().unwrap();
     let (vk_gamma_x, vk_gamma_y) = vk.gamma2.xy().unwrap();
@@ -398,12 +393,12 @@ print_ark_fq(testing_value, "reached line 332".to_string());
     println!("start proving");
     let start_proving = Instant::now();
 
-    let _proof = data.prove(pw).unwrap();
+    let _ = data.prove(pw);
     let end_proving = Instant::now();
-    println!("proof {:?}", _proof);
+    // println!("proof {:?}", _proof);
     println!(
         "end proving. took {:?}",
         end_proving.duration_since(start_proving)
-    );    
+    );
     println!("end proving");
 }
