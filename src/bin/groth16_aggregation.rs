@@ -13,7 +13,7 @@ use plonky2::{
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
     },
 };
-use plonky2_bn254::fields::debug_tools::print_ark_fq;
+use plonky2_bn254::fields::debug_tools::{print_ark_fq, print_fq_target};
 use plonky2_bn254::{
     curves::{
         g1curve_target::G1Target, g2curve_target::G2Target,
@@ -194,7 +194,7 @@ fn main() {
 
     // println!(" temp_affine {:?}", temp_affine);
     let vk_x_final = vk_x_val.add(vk_ic_mul).into_affine();
-    // println!(" vk_x_final {:?}", vk_x_val);
+    println!(" vk_x_final {:?}", vk_x_final);
 
     let mut a = vec![proof.a, vk.alpha1, vk_x_final, proof.c];
 
@@ -266,27 +266,22 @@ fn main() {
     let proof_c = G1Target::empty(&mut builder);
     print_ark_fq(testing_value, "reached line 278".to_string());
 
-    let vk_x = vk_ic[0].clone();
+    let mut vk_x = vk_ic[0].clone();
     print_ark_fq(testing_value, "reached line 281".to_string());
 
     for i in 0..num_inputs {
-        // vk_x = vk_x.add(vk_ic[i+1].mul_bigint(&[input[i];1])).into_affine();
-        let (x, y) = (vk_ic[i + 1].x.clone(), vk_ic[i + 1].y.clone());
-        print_ark_fq(testing_value, "reached line 286".to_string());
-        let (x_ic_mul_input) = x.mul(&mut builder, &input_target[i]);
-        print_ark_fq(testing_value, "reached line 288".to_string());
-        let (y_ic_mul_input) = y.mul(&mut builder, &input_target[i]);
-        print_ark_fq(testing_value, "reached line 290".to_string());
-        // let (x_ic_mul_input_plus_x) = x_ic_mul_input.add(&mut builder, &vk_ic[i].x);
-        // let (y_ic_mul_input_plus_y) = y_ic_mul_input.add(&mut builder, &vk_ic[i].y);
-        let temp_affine = G1Target::new(x_ic_mul_input, y_ic_mul_input);
-        print_ark_fq(testing_value, "reached line 294".to_string());
-        vk_x.add(&mut builder, &temp_affine);
+        let single_vk_1_affine = G1Target::new(vk_ic[i + 1].x.clone(), vk_ic[i + 1].y.clone());
+        let twice_vk_1_affine = single_vk_1_affine.double(&mut builder);
+        let fourth_vk_1_affine = twice_vk_1_affine.double(&mut builder);
+        let eight_vk_1_affine = fourth_vk_1_affine.double(&mut builder);
+        let twentith_vk_1_affine = eight_vk_1_affine
+            .double(&mut builder)
+            .add(&mut builder, &fourth_vk_1_affine);
+        vk_x = vk_x.add(&mut builder, &twentith_vk_1_affine);
     }
 
     let neg_a = proof_a.neg(&mut builder);
-    // print_fq_target(&mut builder, &proof_b.x, "Pairing check #1".to_string());
-    print_ark_fq(testing_value, "reached line 300".to_string());
+    print_ark_fq(testing_value, "reached line 285".to_string());
 
     let mut a: Vec<G1Target<F, D>> = vec![
         neg_a.clone(),
@@ -374,7 +369,6 @@ fn main() {
     vk_ic[1].x.set_witness(&mut pw, vk_ic_1_x);
     vk_ic[1].y.set_witness(&mut pw, vk_ic_1_y);
 
-    // let vk_ic = (0..num_inputs).map(|_| G1Target::empty(&mut builder)).collect_vec();
     proof_a.x.set_witness(&mut pw, proof_a_x);
     proof_a.y.set_witness(&mut pw, proof_a_y);
     proof_b.x.set_witness(&mut pw, proof_b_x);
@@ -382,20 +376,20 @@ fn main() {
     proof_c.x.set_witness(&mut pw, proof_c_x);
     proof_c.y.set_witness(&mut pw, proof_c_y);
 
-    // num_inputs = 0;
     input_target[0].set_witness(&mut pw, &Fq::from(20u64));
-    sipp_proof_circuit.iter()
-    .zip_eq(sipp_proof_native.iter())
-    .for_each(|(t, w)| {
-        t.set_witness(&mut pw, w);
-    });
+    sipp_proof_circuit
+        .iter()
+        .zip_eq(sipp_proof_native.iter())
+        .for_each(|(t, w)| {
+            t.set_witness(&mut pw, w);
+        });
 
     println!("start proving");
     let start_proving = Instant::now();
 
-    let _ = data.prove(pw);
+    let _ = data.prove(pw).unwrap();
     let end_proving = Instant::now();
-    // println!("proof {:?}", _proof);
+
     println!(
         "end proving. took {:?}",
         end_proving.duration_since(start_proving)
